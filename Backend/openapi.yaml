@@ -1,0 +1,2513 @@
+openapi: 3.0.0
+info:
+  title: API BizTown
+  version: 1.0.0
+  description: |
+    # API BizTown - Documentation
+    
+    API pour le jeu BizTown - Gestion des joueurs, ressources, bâtiments et de la ville.
+    
+    ## 🔐 Authentification
+    
+    La plupart des routes nécessitent une authentification JWT. Voici comment procéder :
+    
+    ### 1. Créer un compte
+    Utilisez la route `/api/joueurs/inscription` pour créer un nouveau compte.
+    
+    ### 2. Se connecter
+    Utilisez la route `/api/joueurs/connexion` avec vos identifiants pour obtenir un token JWT.
+    
+    ### 3. Utiliser l'authentification
+    - Cliquez sur le bouton **"Authorize"** (🔒) en haut à droite
+    - Entrez votre token JWT avec le format : `Bearer VOTRE_TOKEN_ICI`
+    - Cliquez sur **"Authorize"** puis **"Close"**
+    
+    ### 4. Routes protégées
+    Une fois authentifié, vous pouvez utiliser toutes les routes protégées qui affichent un cadenas 🔒.
+    
+    ## 📋 Routes disponibles
+    
+    - **Authentification** : Inscription, connexion, profil
+    - **Joueurs** : Gestion des comptes utilisateurs
+    - **Ressources** : Types de ressources du jeu
+    - **Niveaux de Bâtiments** : Configuration des bâtiments
+    - **Ressources des Joueurs** : Inventaire des joueurs
+    - **Cases du Terrain** : Gestion du terrain de jeu
+    - **Possessions de Bâtiments** : Bâtiments construits par les joueurs
+    - **Productions de Ressources** : Configuration de la production
+    - **Besoins en Ressources** : Ressources nécessaires pour les améliorations
+    
+    ## 🚀 Démarrage rapide
+    
+    1. Créez un compte avec `/api/joueurs/inscription`
+    2. Connectez-vous avec `/api/joueurs/connexion`
+    3. Copiez le token JWT de la réponse
+    4. Cliquez sur "Authorize" et entrez `Bearer VOTRE_TOKEN`
+    5. Testez les routes protégées !
+  contact:
+    name: Équipe BizTown
+    email: contact@biztown.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+  - url: http://localhost:3000
+    description: Serveur de développement
+  - url: https://api.biztown.com
+    description: Serveur de production
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token pour l'authentification
+  schemas:
+    # Schéma Joueur
+    Joueur:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: ID unique du joueur
+        nom:
+          type: string
+          description: Nom du joueur
+        email:
+          type: string
+          format: email
+          description: Email du joueur
+        motDePasse:
+          type: string
+          description: Mot de passe (non retourné dans les réponses)
+        niveau:
+          type: number
+          description: Niveau actuel du joueur
+        experience:
+          type: number
+          description: Expérience actuelle du joueur
+        ressources:
+          type: object
+          description: Ressources du joueur
+        createdAt:
+          type: string
+          format: date-time
+          description: Date de création du compte
+        updatedAt:
+          type: string
+          format: date-time
+          description: Date de dernière modification
+      required:
+        - nom
+        - email
+        - motDePasse
+
+    # Schéma Ressource
+    Ressource:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: ID unique de la ressource
+        type:
+          type: string
+          enum: [Énergie, Matériaux, Produits, Influence]
+          description: Type de ressource
+        nom:
+          type: string
+          description: Nom de la ressource
+        image:
+          type: string
+          description: URL de l'image de la ressource
+        prixAchat:
+          type: number
+          description: Prix d'achat de la ressource
+        prixVente:
+          type: number
+          description: Prix de vente de la ressource
+        description:
+          type: string
+          description: Description de la ressource
+        createdAt:
+          type: string
+          format: date-time
+          description: Date de création
+        updatedAt:
+          type: string
+          format: date-time
+          description: Date de dernière modification
+      required:
+        - type
+        - nom
+        - image
+        - prixAchat
+        - prixVente
+
+    # Schéma NiveauBatiment
+    NiveauBatiment:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: ID unique du niveau de bâtiment
+        nom:
+          type: string
+          enum: [Bureau, Usine, Dépôt, Centrale, Marché, Atelier, Banque]
+          description: Nom du type de bâtiment
+        image:
+          type: string
+          description: URL de l'image du bâtiment
+        niveau:
+          type: number
+          description: Niveau du bâtiment
+        description:
+          type: string
+          description: Description du niveau de bâtiment
+        coutBase:
+          type: number
+          description: Coût de base du bâtiment
+        coutAmelioration:
+          type: number
+          description: Coût d'amélioration du bâtiment
+        ressourcesAmelioration:
+          type: array
+          items:
+            type: object
+            properties:
+              ressourceId:
+                type: string
+                description: ID de la ressource nécessaire
+              quantite:
+                type: number
+                description: Quantité de ressource nécessaire
+          description: Ressources nécessaires pour l'amélioration
+        createdAt:
+          type: string
+          format: date-time
+          description: Date de création
+        updatedAt:
+          type: string
+          format: date-time
+          description: Date de dernière modification
+      required:
+        - nom
+        - image
+        - niveau
+
+    # Schéma RessourceJoueur
+    RessourceJoueur:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: ID unique de la ressource du joueur
+        joueurId:
+          type: string
+          description: ID du joueur
+        ressourceId:
+          type: string
+          description: ID de la ressource
+        quantite:
+          type: number
+          description: Quantité de ressource possédée
+        derniereMiseAJour:
+          type: string
+          format: date-time
+          description: Date de dernière mise à jour
+        createdAt:
+          type: string
+          format: date-time
+          description: Date de création
+        updatedAt:
+          type: string
+          format: date-time
+          description: Date de dernière modification
+      required:
+        - joueurId
+        - ressourceId
+
+    # Schéma CasesTerrain
+    CasesTerrain:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: ID unique de la case du terrain
+        pos_x:
+          type: number
+          description: Position X sur le terrain
+        pos_y:
+          type: number
+          description: Position Y sur le terrain
+        joueurId:
+          type: string
+          description: ID du joueur propriétaire
+        createdAt:
+          type: string
+          format: date-time
+          description: Date de création
+        updatedAt:
+          type: string
+          format: date-time
+          description: Date de dernière modification
+      required:
+        - pos_x
+        - pos_y
+        - joueurId
+
+    # Schéma PossessionBatiment
+    PossessionBatiment:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: ID unique de la possession de bâtiment
+        pos_x:
+          type: number
+          description: Position X du bâtiment
+        pos_y:
+          type: number
+          description: Position Y du bâtiment
+        niveauId:
+          type: string
+          description: ID du niveau de bâtiment
+        joueurId:
+          type: string
+          description: ID du joueur propriétaire
+        createdAt:
+          type: string
+          format: date-time
+          description: Date de création
+        updatedAt:
+          type: string
+          format: date-time
+          description: Date de dernière modification
+      required:
+        - pos_x
+        - pos_y
+        - niveauId
+        - joueurId
+
+    # Schéma ProductionRessource
+    ProductionRessource:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: ID unique de la production de ressource
+        niveauId:
+          type: string
+          description: ID du niveau de bâtiment
+        ressourceId:
+          type: string
+          description: ID de la ressource produite
+        quantite:
+          type: number
+          description: Quantité produite
+        frequence:
+          type: number
+          description: Fréquence de production (en heures)
+        actif:
+          type: boolean
+          description: Si la production est active
+        createdAt:
+          type: string
+          format: date-time
+          description: Date de création
+        updatedAt:
+          type: string
+          format: date-time
+          description: Date de dernière modification
+      required:
+        - niveauId
+        - ressourceId
+        - quantite
+
+    # Schéma BesoinRessource
+    BesoinRessource:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: ID unique du besoin en ressource
+        niveauId:
+          type: string
+          description: ID du niveau de bâtiment
+        ressourceId:
+          type: string
+          description: ID de la ressource nécessaire
+        quantite:
+          type: number
+          description: Quantité nécessaire
+        productionRessourceId:
+          type: string
+          description: ID de la production de ressource associée
+        createdAt:
+          type: string
+          format: date-time
+          description: Date de création
+        updatedAt:
+          type: string
+          format: date-time
+          description: Date de dernière modification
+      required:
+        - niveauId
+        - ressourceId
+        - quantite
+
+    # Schémas de requête
+    InscriptionRequest:
+      type: object
+      required: [nom, email, motDePasse]
+      properties:
+        nom:
+          type: string
+          description: Nom du joueur
+          minLength: 2
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          description: Email du joueur
+        motDePasse:
+          type: string
+          description: Mot de passe
+          minLength: 6
+
+    ConnexionRequest:
+      type: object
+      required: [email, motDePasse]
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email du joueur
+        motDePasse:
+          type: string
+          description: Mot de passe
+
+    ConnexionResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Message de succès
+        token:
+          type: string
+          description: JWT token pour l'authentification
+        joueur:
+          $ref: '#/components/schemas/Joueur'
+
+    RessourceRequest:
+      type: object
+      required: [type, nom, image, prixAchat, prixVente]
+      properties:
+        type:
+          type: string
+          enum: [Énergie, Matériaux, Produits, Influence]
+          description: Type de ressource
+        nom:
+          type: string
+          description: Nom de la ressource
+        image:
+          type: string
+          description: URL de l'image
+        prixAchat:
+          type: number
+          description: Prix d'achat
+        prixVente:
+          type: number
+          description: Prix de vente
+        description:
+          type: string
+          description: Description de la ressource
+
+    NiveauBatimentRequest:
+      type: object
+      required: [nom, image, niveau]
+      properties:
+        nom:
+          type: string
+          enum: [Bureau, Usine, Dépôt, Centrale, Marché, Atelier, Banque]
+          description: Nom du type de bâtiment
+        image:
+          type: string
+          description: URL de l'image
+        niveau:
+          type: number
+          description: Niveau du bâtiment
+        description:
+          type: string
+          description: Description du niveau
+        coutBase:
+          type: number
+          description: Coût de base
+        coutAmelioration:
+          type: number
+          description: Coût d'amélioration
+        ressourcesAmelioration:
+          type: array
+          items:
+            type: object
+            properties:
+              ressourceId:
+                type: string
+                description: ID de la ressource
+              quantite:
+                type: number
+                description: Quantité nécessaire
+
+    RessourceJoueurRequest:
+      type: object
+      required: [joueurId, ressourceId]
+      properties:
+        joueurId:
+          type: string
+          description: ID du joueur
+        ressourceId:
+          type: string
+          description: ID de la ressource
+        quantite:
+          type: number
+          description: Quantité de ressource
+
+    CasesTerrainRequest:
+      type: object
+      required: [pos_x, pos_y, joueurId]
+      properties:
+        pos_x:
+          type: number
+          description: Position X
+        pos_y:
+          type: number
+          description: Position Y
+        joueurId:
+          type: string
+          description: ID du joueur propriétaire
+
+    PossessionBatimentRequest:
+      type: object
+      required: [pos_x, pos_y, niveauId, joueurId]
+      properties:
+        pos_x:
+          type: number
+          description: Position X du bâtiment
+        pos_y:
+          type: number
+          description: Position Y du bâtiment
+        niveauId:
+          type: string
+          description: ID du niveau de bâtiment
+        joueurId:
+          type: string
+          description: ID du joueur propriétaire
+
+    ProductionRessourceRequest:
+      type: object
+      required: [niveauId, ressourceId, quantite]
+      properties:
+        niveauId:
+          type: string
+          description: ID du niveau de bâtiment
+        ressourceId:
+          type: string
+          description: ID de la ressource produite
+        quantite:
+          type: number
+          description: Quantité produite
+        frequence:
+          type: number
+          description: Fréquence de production (en heures)
+        actif:
+          type: boolean
+          description: Si la production est active
+
+    BesoinRessourceRequest:
+      type: object
+      required: [niveauId, ressourceId, quantite]
+      properties:
+        niveauId:
+          type: string
+          description: ID du niveau de bâtiment
+        ressourceId:
+          type: string
+          description: ID de la ressource nécessaire
+        quantite:
+          type: number
+          description: Quantité nécessaire
+        productionRessourceId:
+          type: string
+          description: ID de la production de ressource associée
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Message d'erreur
+        error:
+          type: string
+          description: Détails de l'erreur (en développement uniquement) 
+
+paths:
+  # Routes d'accueil
+  /:
+    get:
+      summary: Page d'accueil de l'API
+      description: Retourne un message de bienvenue
+      tags: [Accueil]
+      responses:
+        200:
+          description: Message de bienvenue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Bienvenue sur l'API BizTown"
+
+  # Routes d'authentification et joueurs
+  /api/joueurs/inscription:
+    post:
+      summary: Inscription d'un nouveau joueur
+      description: Crée un nouveau compte joueur
+      tags: [Authentification]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InscriptionRequest'
+            example:
+              nom: "John Doe"
+              email: "john.doe@example.com"
+              motDePasse: "motdepasse123"
+      responses:
+        201:
+          description: Joueur créé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Joueur créé avec succès"
+                  joueur:
+                    $ref: '#/components/schemas/Joueur'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: Email déjà utilisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/joueurs/connexion:
+    post:
+      summary: Connexion d'un joueur
+      description: Authentifie un joueur et retourne un token JWT
+      tags: [Authentification]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnexionRequest'
+            example:
+              email: "john.doe@example.com"
+              motDePasse: "motdepasse123"
+      responses:
+        200:
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnexionResponse'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Email ou mot de passe incorrect
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/joueurs:
+    get:
+      summary: Récupérer tous les joueurs
+      description: Retourne la liste de tous les joueurs (authentification requise)
+      tags: [Joueurs]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Liste des joueurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Joueur'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Créer un nouveau joueur
+      description: Crée un nouveau joueur (authentification requise)
+      tags: [Joueurs]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InscriptionRequest'
+      responses:
+        201:
+          description: Joueur créé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Joueur créé avec succès"
+                  joueur:
+                    $ref: '#/components/schemas/Joueur'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/joueurs/{id}:
+    get:
+      summary: Récupérer un joueur par ID
+      description: Retourne les détails d'un joueur spécifique
+      tags: [Joueurs]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID du joueur
+      responses:
+        200:
+          description: Détails du joueur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Joueur'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Joueur non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Mettre à jour un joueur
+      description: Met à jour les informations d'un joueur
+      tags: [Joueurs]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID du joueur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nom:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                motDePasse:
+                  type: string
+                niveau:
+                  type: number
+                experience:
+                  type: number
+      responses:
+        200:
+          description: Joueur mis à jour avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Joueur mis à jour avec succès"
+                  joueur:
+                    $ref: '#/components/schemas/Joueur'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Joueur non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Supprimer un joueur
+      description: Supprime un joueur de la base de données
+      tags: [Joueurs]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID du joueur
+      responses:
+        200:
+          description: Joueur supprimé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Joueur supprimé avec succès"
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Joueur non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/joueurs/profil:
+    get:
+      summary: Récupérer le profil du joueur connecté
+      description: Retourne les informations du profil du joueur authentifié
+      tags: [Profil]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Profil du joueur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Joueur'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Mettre à jour le profil du joueur connecté
+      description: Met à jour les informations du profil du joueur authentifié
+      tags: [Profil]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nom:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                motDePasse:
+                  type: string
+      responses:
+        200:
+          description: Profil mis à jour avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Profil mis à jour avec succès"
+                  joueur:
+                    $ref: '#/components/schemas/Joueur'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/joueurs/test:
+    get:
+      summary: Route de test pour vérifier les joueurs
+      description: Route de test pour récupérer tous les joueurs (à retirer en production)
+      tags: [Joueurs]
+      responses:
+        200:
+          description: Liste de tous les joueurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Joueur'
+        500:
+          description: Erreur lors de la récupération des joueurs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/joueurs/classement:
+    get:
+      summary: Récupérer le classement des joueurs
+      description: Retourne le classement des joueurs basé sur leur niveau et expérience
+      tags: [Joueurs]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Classement des joueurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Joueur'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Routes des ressources
+  /api/ressources:
+    get:
+      summary: Récupérer toutes les ressources
+      description: Retourne la liste de toutes les ressources
+      tags: [Ressources]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Liste des ressources
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ressource'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Créer une nouvelle ressource
+      description: Crée une nouvelle ressource (authentification requise)
+      tags: [Ressources]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RessourceRequest'
+            example:
+              type: "Énergie"
+              nom: "Électricité"
+              image: "/images/electricite.png"
+              prixAchat: 10
+              prixVente: 15
+              description: "Énergie électrique de base"
+      responses:
+        201:
+          description: Ressource créée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Ressource créée avec succès"
+                  ressource:
+                    $ref: '#/components/schemas/Ressource'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/ressources/{id}:
+    get:
+      summary: Récupérer une ressource par ID
+      description: Retourne les détails d'une ressource spécifique
+      tags: [Ressources]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID de la ressource
+      responses:
+        200:
+          description: Détails de la ressource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ressource'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Ressource non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Mettre à jour une ressource
+      description: Met à jour les informations d'une ressource
+      tags: [Ressources]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID de la ressource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RessourceRequest'
+      responses:
+        200:
+          description: Ressource mise à jour avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Ressource mise à jour avec succès"
+                  ressource:
+                    $ref: '#/components/schemas/Ressource'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Ressource non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Supprimer une ressource
+      description: Supprime une ressource de la base de données
+      tags: [Ressources]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID de la ressource
+      responses:
+        200:
+          description: Ressource supprimée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Ressource supprimée avec succès"
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Ressource non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Routes des niveaux de bâtiments
+  /api/niveaux-batiments:
+    get:
+      summary: Récupérer tous les niveaux de bâtiments
+      description: Retourne la liste de tous les niveaux de bâtiments
+      tags: [Niveaux de Bâtiments]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Liste des niveaux de bâtiments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NiveauBatiment'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Créer un nouveau niveau de bâtiment
+      description: Crée un nouveau niveau de bâtiment (authentification requise)
+      tags: [Niveaux de Bâtiments]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NiveauBatimentRequest'
+            example:
+              nom: "Bureau"
+              image: "/images/bureau.png"
+              niveau: 1
+              description: "Bureau de niveau 1"
+              coutBase: 1000
+              coutAmelioration: 500
+              ressourcesAmelioration:
+                - ressourceId: "507f1f77bcf86cd799439011"
+                  quantite: 10
+      responses:
+        201:
+          description: Niveau de bâtiment créé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Niveau de bâtiment créé avec succès"
+                  niveauBatiment:
+                    $ref: '#/components/schemas/NiveauBatiment'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/niveaux-batiments/{id}:
+    get:
+      summary: Récupérer un niveau de bâtiment par ID
+      description: Retourne les détails d'un niveau de bâtiment spécifique
+      tags: [Niveaux de Bâtiments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID du niveau de bâtiment
+      responses:
+        200:
+          description: Détails du niveau de bâtiment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NiveauBatiment'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Niveau de bâtiment non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Mettre à jour un niveau de bâtiment
+      description: Met à jour les informations d'un niveau de bâtiment
+      tags: [Niveaux de Bâtiments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID du niveau de bâtiment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NiveauBatimentRequest'
+      responses:
+        200:
+          description: Niveau de bâtiment mis à jour avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Niveau de bâtiment mis à jour avec succès"
+                  niveauBatiment:
+                    $ref: '#/components/schemas/NiveauBatiment'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Niveau de bâtiment non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Supprimer un niveau de bâtiment
+      description: Supprime un niveau de bâtiment de la base de données
+      tags: [Niveaux de Bâtiments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID du niveau de bâtiment
+      responses:
+        200:
+          description: Niveau de bâtiment supprimé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Niveau de bâtiment supprimé avec succès"
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Niveau de bâtiment non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Routes des ressources des joueurs
+  /api/ressources-joueurs:
+    get:
+      summary: Récupérer toutes les ressources des joueurs
+      description: Retourne la liste de toutes les ressources des joueurs
+      tags: [Ressources des Joueurs]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Liste des ressources des joueurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RessourceJoueur'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Créer une nouvelle ressource de joueur
+      description: Crée une nouvelle ressource de joueur (authentification requise)
+      tags: [Ressources des Joueurs]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RessourceJoueurRequest'
+            example:
+              joueurId: "507f1f77bcf86cd799439011"
+              ressourceId: "507f1f77bcf86cd799439012"
+              quantite: 100
+      responses:
+        201:
+          description: Ressource de joueur créée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Ressource de joueur créée avec succès"
+                  ressourceJoueur:
+                    $ref: '#/components/schemas/RessourceJoueur'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/ressources-joueurs/{id}:
+    get:
+      summary: Récupérer une ressource de joueur par ID
+      description: Retourne les détails d'une ressource de joueur spécifique
+      tags: [Ressources des Joueurs]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID de la ressource de joueur
+      responses:
+        200:
+          description: Détails de la ressource de joueur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RessourceJoueur'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Ressource de joueur non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Mettre à jour une ressource de joueur
+      description: Met à jour les informations d'une ressource de joueur
+      tags: [Ressources des Joueurs]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID de la ressource de joueur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RessourceJoueurRequest'
+      responses:
+        200:
+          description: Ressource de joueur mise à jour avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Ressource de joueur mise à jour avec succès"
+                  ressourceJoueur:
+                    $ref: '#/components/schemas/RessourceJoueur'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Ressource de joueur non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Supprimer une ressource de joueur
+      description: Supprime une ressource de joueur de la base de données
+      tags: [Ressources des Joueurs]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID de la ressource de joueur
+      responses:
+        200:
+          description: Ressource de joueur supprimée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Ressource de joueur supprimée avec succès"
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Ressource de joueur non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/ressources-joueurs/joueur/{joueurId}:
+    get:
+      summary: Récupérer toutes les ressources d'un joueur
+      description: Retourne toutes les ressources d'un joueur spécifique
+      tags: [Ressources des Joueurs]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: joueurId
+          required: true
+          schema:
+            type: string
+          description: ID du joueur
+      responses:
+        200:
+          description: Ressources du joueur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RessourceJoueur'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Joueur non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Routes des cases du terrain
+  /api/cases-terrain:
+    get:
+      summary: Récupérer toutes les cases du terrain
+      description: Retourne la liste de toutes les cases du terrain
+      tags: [Cases du Terrain]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Liste des cases du terrain
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CasesTerrain'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Créer une nouvelle case du terrain
+      description: Crée une nouvelle case du terrain (authentification requise)
+      tags: [Cases du Terrain]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CasesTerrainRequest'
+            example:
+              pos_x: 10
+              pos_y: 15
+              joueurId: "507f1f77bcf86cd799439011"
+      responses:
+        201:
+          description: Case du terrain créée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Case du terrain créée avec succès"
+                  caseTerrain:
+                    $ref: '#/components/schemas/CasesTerrain'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/cases-terrain/{id}:
+    get:
+      summary: Récupérer une case du terrain par ID
+      description: Retourne les détails d'une case du terrain spécifique
+      tags: [Cases du Terrain]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID de la case du terrain
+      responses:
+        200:
+          description: Détails de la case du terrain
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CasesTerrain'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Case du terrain non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Mettre à jour une case du terrain
+      description: Met à jour les informations d'une case du terrain
+      tags: [Cases du Terrain]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID de la case du terrain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CasesTerrainRequest'
+      responses:
+        200:
+          description: Case du terrain mise à jour avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Case du terrain mise à jour avec succès"
+                  caseTerrain:
+                    $ref: '#/components/schemas/CasesTerrain'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Case du terrain non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Supprimer une case du terrain
+      description: Supprime une case du terrain de la base de données
+      tags: [Cases du Terrain]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID de la case du terrain
+      responses:
+        200:
+          description: Case du terrain supprimée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Case du terrain supprimée avec succès"
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Case du terrain non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/cases-terrain/joueur/{joueurId}:
+    get:
+      summary: Récupérer toutes les cases d'un joueur
+      description: Retourne toutes les cases du terrain d'un joueur spécifique
+      tags: [Cases du Terrain]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: joueurId
+          required: true
+          schema:
+            type: string
+          description: ID du joueur
+      responses:
+        200:
+          description: Cases du terrain du joueur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CasesTerrain'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Joueur non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Routes des possessions de bâtiments
+  /api/possession-batiments:
+    get:
+      summary: Récupérer toutes les possessions de bâtiments
+      description: Retourne la liste de toutes les possessions de bâtiments
+      tags: [Possessions de Bâtiments]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Liste des possessions de bâtiments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PossessionBatiment'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Créer une nouvelle possession de bâtiment
+      description: Crée une nouvelle possession de bâtiment (authentification requise)
+      tags: [Possessions de Bâtiments]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PossessionBatimentRequest'
+            example:
+              pos_x: 10
+              pos_y: 15
+              niveauId: "507f1f77bcf86cd799439011"
+              joueurId: "507f1f77bcf86cd799439012"
+      responses:
+        201:
+          description: Possession de bâtiment créée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Possession de bâtiment créée avec succès"
+                  possessionBatiment:
+                    $ref: '#/components/schemas/PossessionBatiment'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/possession-batiments/{id}:
+    get:
+      summary: Récupérer une possession de bâtiment par ID
+      description: Retourne les détails d'une possession de bâtiment spécifique
+      tags: [Possessions de Bâtiments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID de la possession de bâtiment
+      responses:
+        200:
+          description: Détails de la possession de bâtiment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PossessionBatiment'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Possession de bâtiment non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Mettre à jour une possession de bâtiment
+      description: Met à jour les informations d'une possession de bâtiment
+      tags: [Possessions de Bâtiments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID de la possession de bâtiment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PossessionBatimentRequest'
+      responses:
+        200:
+          description: Possession de bâtiment mise à jour avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Possession de bâtiment mise à jour avec succès"
+                  possessionBatiment:
+                    $ref: '#/components/schemas/PossessionBatiment'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Possession de bâtiment non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Supprimer une possession de bâtiment
+      description: Supprime une possession de bâtiment (authentification requise)
+      tags: [Possessions de Bâtiments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID de la possession de bâtiment
+      responses:
+        200:
+          description: Possession de bâtiment supprimée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Possession de bâtiment supprimée avec succès"
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Possession de bâtiment non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/possession-batiments/joueur/{joueurId}:
+    get:
+      summary: Récupérer les possessions de bâtiments d'un joueur
+      description: Retourne toutes les possessions de bâtiments d'un joueur spécifique
+      tags: [Possessions de Bâtiments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: joueurId
+          required: true
+          schema:
+            type: string
+          description: ID du joueur
+      responses:
+        200:
+          description: Liste des possessions de bâtiments du joueur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PossessionBatiment'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Joueur non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Routes des productions de ressources
+  /api/production-ressources:
+    get:
+      summary: Récupérer toutes les productions de ressources
+      description: Retourne la liste de toutes les productions de ressources
+      tags: [Productions de Ressources]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Liste des productions de ressources
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductionRessource'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Créer une nouvelle production de ressource
+      description: Crée une nouvelle production de ressource (authentification requise)
+      tags: [Productions de Ressources]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductionRessourceRequest'
+            example:
+              niveauId: "507f1f77bcf86cd799439011"
+              ressourceId: "507f1f77bcf86cd799439012"
+              quantite: 10
+              frequence: 3600
+              actif: true
+      responses:
+        201:
+          description: Production de ressource créée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Production de ressource créée avec succès"
+                  productionRessource:
+                    $ref: '#/components/schemas/ProductionRessource'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/production-ressources/{id}:
+    get:
+      summary: Récupérer une production de ressource par ID
+      description: Retourne les détails d'une production de ressource spécifique
+      tags: [Productions de Ressources]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID de la production de ressource
+      responses:
+        200:
+          description: Détails de la production de ressource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductionRessource'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Production de ressource non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Mettre à jour une production de ressource
+      description: Met à jour les informations d'une production de ressource
+      tags: [Productions de Ressources]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID de la production de ressource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductionRessourceRequest'
+      responses:
+        200:
+          description: Production de ressource mise à jour avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Production de ressource mise à jour avec succès"
+                  productionRessource:
+                    $ref: '#/components/schemas/ProductionRessource'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Production de ressource non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Supprimer une production de ressource
+      description: Supprime une production de ressource (authentification requise)
+      tags: [Productions de Ressources]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID de la production de ressource
+      responses:
+        200:
+          description: Production de ressource supprimée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Production de ressource supprimée avec succès"
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Production de ressource non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/production-ressources/niveau/{niveauId}:
+    get:
+      summary: Récupérer les productions de ressources par niveau
+      description: Retourne toutes les productions de ressources d'un niveau de bâtiment spécifique
+      tags: [Productions de Ressources]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: niveauId
+          required: true
+          schema:
+            type: string
+          description: ID du niveau de bâtiment
+      responses:
+        200:
+          description: Liste des productions de ressources du niveau
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductionRessource'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Niveau de bâtiment non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/production-ressources/actives:
+    get:
+      summary: Récupérer les productions de ressources actives
+      description: Retourne toutes les productions de ressources actives
+      tags: [Productions de Ressources]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Liste des productions de ressources actives
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductionRessource'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Routes des besoins en ressources
+  /api/besoins-ressources:
+    get:
+      summary: Récupérer tous les besoins en ressources
+      description: Retourne la liste de tous les besoins en ressources
+      tags: [Besoins en Ressources]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Liste des besoins en ressources
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BesoinRessource'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Créer un nouveau besoin en ressource
+      description: Crée un nouveau besoin en ressource (authentification requise)
+      tags: [Besoins en Ressources]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BesoinRessourceRequest'
+            example:
+              niveauId: "507f1f77bcf86cd799439011"
+              ressourceId: "507f1f77bcf86cd799439012"
+              quantite: 5
+              productionRessourceId: "507f1f77bcf86cd799439013"
+      responses:
+        201:
+          description: Besoin en ressource créé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Besoin en ressource créé avec succès"
+                  besoinRessource:
+                    $ref: '#/components/schemas/BesoinRessource'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/besoins-ressources/{id}:
+    get:
+      summary: Récupérer un besoin en ressource par ID
+      description: Retourne les détails d'un besoin en ressource spécifique
+      tags: [Besoins en Ressources]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID du besoin en ressource
+      responses:
+        200:
+          description: Détails du besoin en ressource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BesoinRessource'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Besoin en ressource non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Mettre à jour un besoin en ressource
+      description: Met à jour les informations d'un besoin en ressource
+      tags: [Besoins en Ressources]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID du besoin en ressource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BesoinRessourceRequest'
+      responses:
+        200:
+          description: Besoin en ressource mis à jour avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Besoin en ressource mis à jour avec succès"
+                  besoinRessource:
+                    $ref: '#/components/schemas/BesoinRessource'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Besoin en ressource non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Supprimer un besoin en ressource
+      description: Supprime un besoin en ressource de la base de données
+      tags: [Besoins en Ressources]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID du besoin en ressource
+      responses:
+        200:
+          description: Besoin en ressource supprimé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Besoin en ressource supprimé avec succès"
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Besoin en ressource non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/besoins-ressources/niveau/{niveauId}:
+    get:
+      summary: Récupérer tous les besoins d'un niveau
+      description: Retourne tous les besoins en ressources d'un niveau de bâtiment spécifique
+      tags: [Besoins en Ressources]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: niveauId
+          required: true
+          schema:
+            type: string
+          description: ID du niveau de bâtiment
+      responses:
+        200:
+          description: Besoins en ressources du niveau
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BesoinRessource'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Niveau de bâtiment non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/besoins-ressources/production/{productionRessourceId}:
+    get:
+      summary: Récupérer tous les besoins d'une production
+      description: Retourne tous les besoins en ressources d'une production de ressource spécifique
+      tags: [Besoins en Ressources]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: productionRessourceId
+          required: true
+          schema:
+            type: string
+          description: ID de la production de ressource
+      responses:
+        200:
+          description: Besoins en ressources de la production
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BesoinRessource'
+        401:
+          description: Token d'authentification invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error' 

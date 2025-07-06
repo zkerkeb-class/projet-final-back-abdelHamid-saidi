@@ -1,0 +1,498 @@
+openapi: 3.0.0
+info:
+  title: API BizTown
+  version: 1.0.0
+  description: API pour le jeu BizTown - Gestion des joueurs et de la ville
+  contact:
+    name: Équipe BizTown
+    email: contact@biztown.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+  - url: http://localhost:3000
+    description: Serveur de développement
+  - url: https://api.biztown.com
+    description: Serveur de production
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Joueur:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: ID unique du joueur (MongoDB ObjectId)
+        pseudo:
+          type: string
+          description: Pseudo unique du joueur
+          minLength: 3
+        email:
+          type: string
+          format: email
+          description: Email unique du joueur
+        motDePasseHash:
+          type: string
+          description: Hash du mot de passe (non retourné dans les réponses)
+        patrimoine:
+          type: number
+          description: Patrimoine du joueur en BizCoins
+          minimum: 0
+          default: 0
+        classement:
+          type: number
+          description: Position du joueur dans le classement
+          minimum: 0
+          default: 0
+        createdAt:
+          type: string
+          format: date-time
+          description: Date de création du compte
+        updatedAt:
+          type: string
+          format: date-time
+          description: Date de dernière modification
+      required:
+        - pseudo
+        - email
+        - motDePasseHash
+    Batiment:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: ID unique du bâtiment
+        nom:
+          type: string
+          description: Nom du bâtiment
+        type:
+          type: string
+          enum: [Bureau, Usine, Dépôt, Centrale, Marché, Atelier, Banque]
+          description: Type de bâtiment
+        plan:
+          type: string
+          description: Plan du bâtiment
+        description:
+          type: string
+          description: Description du bâtiment
+        coutBase:
+          type: number
+          description: Coût de base du bâtiment
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - nom
+        - type
+        - coutBase
+    Ressource:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: ID unique de la ressource
+        type:
+          type: string
+          enum: [BizCoins, Énergie, Matériaux, Produits, Influence]
+          description: Type de ressource
+        nom:
+          type: string
+          description: Nom de la ressource
+        prix:
+          type: number
+          description: Prix de la ressource
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - type
+        - nom
+        - prix
+    Niveau:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: ID unique du niveau
+        numero:
+          type: number
+          description: Numéro du niveau
+          minimum: 1
+        nom:
+          type: string
+          description: Nom du niveau
+        description:
+          type: string
+          description: Description du niveau
+        coutAmelioration:
+          type: number
+          description: Coût d'amélioration du niveau
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - numero
+        - nom
+        - coutAmelioration
+    CasesTerrain:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID unique de la case terrain
+        pos_x:
+          type: integer
+          description: Position X sur le terrain
+        pos_y:
+          type: integer
+          description: Position Y sur le terrain
+        joueurId:
+          type: string
+          format: uuid
+          description: ID du joueur propriétaire
+      required:
+        - pos_x
+        - pos_y
+        - joueurId
+    PossessionBatiment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID unique de la possession de bâtiment
+        pos_x:
+          type: integer
+          description: Position X du bâtiment
+        pos_y:
+          type: integer
+          description: Position Y du bâtiment
+        niveauId:
+          type: string
+          format: uuid
+          description: ID du niveau du bâtiment
+        joueurId:
+          type: string
+          format: uuid
+          description: ID du joueur propriétaire
+      required:
+        - pos_x
+        - pos_y
+        - niveauId
+        - joueurId
+    InscriptionRequest:
+      type: object
+      required: [pseudo, email, motDePasse]
+      properties:
+        pseudo:
+          type: string
+          description: Pseudo unique du joueur
+          minLength: 3
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          description: Email unique du joueur
+        motDePasse:
+          type: string
+          description: Mot de passe en clair (sera hashé)
+          minLength: 6
+    ConnexionRequest:
+      type: object
+      required: [email, motDePasse]
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email du joueur
+        motDePasse:
+          type: string
+          description: Mot de passe
+    ConnexionResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Message de succès
+        token:
+          type: string
+          description: JWT token pour l'authentification
+        joueur:
+          $ref: '#/components/schemas/Joueur'
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Message d'erreur
+        error:
+          type: string
+          description: Détails de l'erreur (en développement uniquement)
+paths:
+  /:
+    get:
+      summary: Page d'accueil de l'API
+      description: Retourne un message de bienvenue
+      tags: [Accueil]
+      responses:
+        200:
+          description: Message de bienvenue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Bienvenue sur l'API BizTown"
+  /api/joueurs/test:
+    get:
+      summary: Récupérer tous les joueurs (test)
+      description: Route de test pour vérifier les joueurs (à retirer en production)
+      tags: [Joueurs - Test]
+      responses:
+        200:
+          description: Liste de tous les joueurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Joueur'
+        500:
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/joueurs/inscription:
+    post:
+      summary: Inscription d'un nouveau joueur
+      description: Crée un nouveau compte joueur
+      tags: [Authentification]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InscriptionRequest'
+            example:
+              pseudo: "JohnDoe"
+              email: "john.doe@example.com"
+              motDePasse: "motdepasse123"
+      responses:
+        201:
+          description: Joueur créé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Joueur créé avec succès"
+                  joueur:
+                    $ref: '#/components/schemas/Joueur'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: Email ou pseudo déjà utilisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/joueurs/connexion:
+    post:
+      summary: Connexion d'un joueur
+      description: Authentifie un joueur et retourne un token JWT
+      tags: [Authentification]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnexionRequest'
+            example:
+              email: "john.doe@example.com"
+              motDePasse: "motdepasse123"
+      responses:
+        200:
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnexionResponse'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Email ou mot de passe incorrect
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/joueurs/profil:
+    get:
+      summary: Récupérer le profil du joueur connecté
+      description: Retourne les informations du profil du joueur authentifié
+      tags: [Profil]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Profil du joueur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Joueur'
+        401:
+          description: Token d'authentification invalide ou manquant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Joueur non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Mettre à jour le profil du joueur
+      description: Met à jour les informations du profil du joueur authentifié
+      tags: [Profil]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pseudo:
+                  type: string
+                  minLength: 3
+                  maxLength: 50
+                email:
+                  type: string
+                  format: email
+                motDePasse:
+                  type: string
+                  minLength: 6
+            example:
+              pseudo: "JohnSmith"
+              email: "john.smith@example.com"
+      responses:
+        200:
+          description: Profil mis à jour avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Profil mis à jour avec succès"
+                  joueur:
+                    $ref: '#/components/schemas/Joueur'
+        400:
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Token d'authentification invalide ou manquant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Joueur non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/joueurs/classement:
+    get:
+      summary: Récupérer le classement des joueurs
+      description: Retourne le classement des joueurs triés par patrimoine
+      tags: [Classement]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+          description: Nombre maximum de joueurs à retourner
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Numéro de page pour la pagination
+      responses:
+        200:
+          description: Classement des joueurs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  joueurs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Joueur'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      total:
+                        type: integer
+                      pages:
+                        type: integer
+        401:
+          description: Token d'authentification invalide ou manquant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error' 
